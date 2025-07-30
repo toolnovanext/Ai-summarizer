@@ -4,558 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Summarizer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.18/marked.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 1000px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
         }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .media-player {
-            width: 100%;
-            max-height: 400px;
+        .tablist {
+            display: flex;
+            gap: 10px;
             margin-bottom: 20px;
-            display: none;
         }
-        .media-preview {
-            max-width: 100%;
-            max-height: 400px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        #fileInput {
-            margin: 20px 0;
-            display: block;
-        }
-        .summary-card {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-        .summary-content {
-            white-space: pre-wrap;
-            min-height: 100px;
-        }
-        .error {
-            color: red;
-            margin: 10px 0;
-            display: none;
-        }
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
+        button[role="tab"] {
             padding: 10px 20px;
-            border-radius: 4px;
-            display: none;
-            z-index: 1000;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+            cursor: pointer;
         }
-        button {
+        button[role="tab"][aria-selected="true"] {
             background: #007bff;
             color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
+            border-color: #007bff;
         }
-        button:hover {
-            background: #0056b3;
-        }
-        button:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-        .collapsible {
-            cursor: pointer;
-            padding: 10px;
-            background: #e9ecef;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-        .collapsible-content {
+        .tabpanel {
             display: none;
-            padding: 10px;
-            background: #f1f3f5;
-            border-radius: 4px;
+            padding: 20px;
+            border: 1px solid #ccc;
         }
-        .collapsible-content.active {
+        .tabpanel.active {
             display: block;
         }
-        .question-input {
+        iframe {
             width: 100%;
-            padding: 8px;
-            margin: 10px 0;
-            border-radius: 4px;
+            height: 500px;
             border: 1px solid #ccc;
-        }
-        .translate-section {
-            margin: 10px 0;
-        }
-        .translate-input {
-            padding: 8px;
-            margin: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-        .welcome-message {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #555;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>AI Summarizer</h1>
-        <div id="welcomeMessage" class="welcome-message">
-            Hello, I am your personal AI Summarizer developed by the accessible resource team. Upload any video, audio, image, or document to proceed with AI summarization.
-        </div>
-        <input type="file" id="fileInput" accept="video/*,audio/*,image/*,.pdf,.doc,.docx,.txt">
-        <button id="removeBtn" style="display: none;" onclick="removeMedia()">Remove File</button>
-        <video id="videoPlayer" class="media-player" controls></video>
-        <audio id="audioPlayer" class="media-player" controls></audio>
-        <img id="imagePreview" class="media-preview">
-        <iframe id="docPreview" class="media-preview"></iframe>
-        <button id="summarizeBtn" onclick="summarizeMedia()" disabled>Summarize Content</button>
-        <div id="loading" class="loading"></div>
-        <div id="error" class="error"></div>
-        <div id="summaries"></div>
-        <div id="toast" class="toast"></div>
+    <h1>Summarizers</h1>
+<p>realizing the dreams through the technology.</p>
+<p>hi, this tool is developed by Sujan Rai and SM ripon at accessible resource.</p>
+    <div role="tablist" class="tablist">
+        <button role="tab" id="file-tab" aria-selected="true" aria-controls="file-summarizer-panel">Files Summarizer</button>
+        <button role="tab" id="yt-tab" aria-selected="false" aria-controls="youtube-summarizer-panel">YouTube Videos Summarizer</button>
+    </div>
+    <div id="file-summarizer-panel" class="tabpanel active" role="tabpanel" aria-labelledby="file-tab">
+        <iframe id="file-summarizer-iframe" src="summarizer.html"></iframe>
+    </div>
+    <div id="youtube-summarizer-panel" class="tabpanel" role="tabpanel" aria-labelledby="yt-tab">
+        <iframe id="youtube-summarizer-iframe" src="YouTube-summarizer.html"></iframe>
     </div>
 
     <script>
-        const API_KEY = 'AIzaSyDYeLxp7Jp5qSypbVBPy9v_XYmz7Sc1qfs';
-        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
-        const fileInput = document.getElementById('fileInput');
-        const videoPlayer = document.getElementById('videoPlayer');
-        const audioPlayer = document.getElementById('audioPlayer');
-        const imagePreview = document.getElementById('imagePreview');
-        const docPreview = document.getElementById('docPreview');
-        const summarizeBtn = document.getElementById('summarizeBtn');
-        const removeBtn = document.getElementById('removeBtn');
-        const summariesDiv = document.getElementById('summaries');
-        const errorDiv = document.getElementById('error');
-        const loadingDiv = document.getElementById('loading');
-        const toastDiv = document.getElementById('toast');
-        const welcomeMessage = document.getElementById('welcomeMessage');
+        // Tab switching functionality
+        const tabs = document.querySelectorAll('[role="tab"]');
+        const panels = document.querySelectorAll('[role="tabpanel"]');
 
-        let summaryCounter = 0;
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.setAttribute('aria-selected', 'false'));
+                panels.forEach(p => p.classList.remove('active'));
 
-        // Handle media file selection
-        fileInput.addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                // Check file size (limit to 100MB)
-                if (file.size > 100 * 1024 * 1024) {
-                    showError('File is too large. Please select a file under 100MB.');
-                    return;
-                }
-
-                // Reset players and previews
-                videoPlayer.style.display = 'none';
-                audioPlayer.style.display = 'none';
-                imagePreview.style.display = 'none';
-                docPreview.style.display = 'none';
-                welcomeMessage.style.display = 'none';
-                removeBtn.style.display = 'inline-block';
-
-                const url = URL.createObjectURL(file);
-                if (file.type.startsWith('video/')) {
-                    videoPlayer.src = url;
-                    videoPlayer.style.display = 'block';
-                } else if (file.type.startsWith('audio/')) {
-                    audioPlayer.src = url;
-                    audioPlayer.style.display = 'block';
-                } else if (file.type.startsWith('image/')) {
-                    imagePreview.src = url;
-                    imagePreview.style.display = 'block';
-                } else if (['application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-                    docPreview.src = url;
-                    docPreview.style.display = 'block';
-                }
-
-                summarizeBtn.disabled = false;
-                clearError();
-            }
+                tab.setAttribute('aria-selected', 'true');
+                const panelId = tab.getAttribute('aria-controls');
+                document.getElementById(panelId).classList.add('active');
+            });
         });
-
-        // Remove uploaded file
-        function removeMedia() {
-            fileInput.value = '';
-            videoPlayer.style.display = 'none';
-            audioPlayer.style.display = 'none';
-            imagePreview.style.display = 'none';
-            docPreview.style.display = 'none';
-            summarizeBtn.disabled = true;
-            removeBtn.style.display = 'none';
-            welcomeMessage.style.display = 'block';
-            URL.revokeObjectURL(videoPlayer.src || audioPlayer.src || imagePreview.src || docPreview.src);
-        }
-
-        async function summarizeMedia() {
-            const file = fileInput.files[0];
-            if (!file) {
-                showError('Please select a file first.');
-                return;
-            }
-
-            try {
-                showLoading(true, 'Processing your content...');
-                summarizeBtn.disabled = true;
-
-                // Convert file to base64
-                const base64Data = await fileToBase64(file);
-
-                // Determine prompt based on file type
-                let prompt;
-                if (file.type.startsWith('video/')) {
-                    prompt = `Provide a detailed summary of the video content in markdown format, including:
-                    1. Scene-by-scene breakdown
-                    2. Visual elements (colors, lighting, objects)
-                    3. Audio elements (music, dialogue, sound effects)
-                    4. Overall mood and tone
-                    5. Any text or subtitles present
-                    6. Estimated duration
-                    Be as detailed as possible while keeping the summary concise and organized.`;
-                } else if (file.type.startsWith('audio/')) {
-                    prompt = `Provide a detailed summary of the audio content in markdown format, including:
-                    1. Breakdown of audio segments
-                    2. Types of sounds (music, dialogue, sound effects)
-                    3. Overall mood and tone
-                    4. Any discernible lyrics or spoken content
-                    5. Estimated duration
-                    Be as detailed as possible while keeping the summary concise and organized.`;
-                } else if (file.type.startsWith('image/')) {
-                    prompt = `Provide a detailed summary of the image content in markdown format, including:
-                    1. Main subjects and objects
-                    2. Colors and lighting
-                    3. Composition and layout
-                    4. Overall mood and tone
-                    5. Any text present
-                    Be as detailed as possible while keeping the summary concise and organized.`;
-                } else {
-                    prompt = `Provide a detailed summary of the document content in markdown format, including:
-                    1. Main topics or sections
-                    2. Key points or arguments
-                    3. Writing style and tone
-                    4. Any notable formatting or structure
-                    5. Summary of content
-                    Be as detailed as possible while keeping the summary concise and organized.`;
-                }
-
-                const requestBody = {
-                    contents: [{
-                        parts: [
-                            { text: prompt },
-                            {
-                                inline_data: {
-                                    mime_type: file.type,
-                                    data: base64Data.split(',')[1]
-                                }
-                            }
-                        ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 8192,
-                        responseMimeType: 'text/plain'
-                    }
-                };
-
-                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API request failed: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!summary) {
-                    throw new Error('No summary received from API');
-                }
-
-                // Render summary with markdown
-                const summaryId = `summary-${summaryCounter++}`;
-                const summaryHtml = `
-                    <div class="summary-card" id="${summaryId}">
-                        <div class="summary-content">${marked.parse(summary)}</div>
-                        <div><i>Didn't understand? Ask more about this. Click the "Ask More" button below.</i></div>
-                        <div>
-                            <button onclick="copyText('${summaryId}')">Copy Summary</button>
-                            <button onclick="downloadText('${summaryId}')">Download Summary</button>
-                            <button onclick="shareText('${summaryId}')">Share Summary</button>
-                            <button onclick="deleteSummary('${summaryId}')">Delete Summary</button>
-                        </div>
-                        <div class="collapsible" onclick="toggleCollapsible('ask-${summaryId}')">Ask More</div>
-                        <div id="ask-${summaryId}" class="collapsible-content">
-                            <textarea id="ask-input-${summaryId}" class="question-input" placeholder="Ask for more details..."></textarea>
-                            <button onclick="askMore('${summaryId}')">Submit Question</button>
-                            <div id="ask-response-${summaryId}"></div>
-                        </div>
-                        <div class="collapsible" onclick="toggleCollapsible('translate-${summaryId}')">Translate Summary</div>
-                        <div id="translate-${summaryId}" class="collapsible-content">
-                            <div class="translate-section">
-                                <input type="text" id="source-lang-${summaryId}" class="translate-input" placeholder="Source Language (e.g., English)">
-                                <input type="text" id="dest-lang-${summaryId}" class="translate-input" placeholder="Target Language (e.g., Spanish)">
-                                <button onclick="translateSummary('${summaryId}')">Translate Now</button>
-                            </div>
-                            <div id="translate-response-${summaryId}"></div>
-                        </div>
-                    </div>
-                `;
-                summariesDiv.insertAdjacentHTML('afterbegin', summaryHtml);
-                showLoading(false);
-            } catch (error) {
-                showError(`Error processing file: ${error.message}`);
-                showLoading(false);
-            } finally {
-                summarizeBtn.disabled = false;
-            }
-        }
-
-        async function askMore(summaryId) {
-            const input = document.getElementById(`ask-input-${summaryId}`);
-            const responseDiv = document.getElementById(`ask-response-${summaryId}`);
-            const question = input.value.trim();
-
-            if (!question) {
-                showError('Please enter a question.');
-                return;
-            }
-
-            try {
-                showLoading(true, 'Processing your question...');
-                const originalSummary = document.getElementById(summaryId).querySelector('.summary-content').innerText;
-                const prompt = `Based on the following summary:\n\n${originalSummary}\n\nAnswer the following question in markdown format: ${question}`;
-                
-                const requestBody = {
-                    contents: [{
-                        parts: [{ text: prompt }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 8192,
-                        responseMimeType: 'text/plain'
-                    }
-                };
-
-                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API request failed: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!answer) {
-                    throw new Error('No response received from API');
-                }
-
-                const responseId = `ask-response-content-${summaryId}`;
-                responseDiv.innerHTML = `
-                    <div id="${responseId}">${marked.parse(answer)}</div>
-                    <button onclick="copyText('${responseId}')">Copy Answer</button>
-                    <button onclick="shareText('${responseId}')">Share Answer</button>
-                    <button onclick="deleteAskResponse('${responseId}')">Delete Answer</button>
-                `;
-                input.value = ''; // Clear input
-                showLoading(false);
-            } catch (error) {
-                showError(`Error processing question: ${error.message}`);
-                showLoading(false);
-            }
-        }
-
-        async function translateSummary(summaryId) {
-            const sourceLang = document.getElementById(`source-lang-${summaryId}`).value.trim();
-            const destLang = document.getElementById(`dest-lang-${summaryId}`).value.trim();
-            const responseDiv = document.getElementById(`translate-response-${summaryId}`);
-
-            if (!sourceLang || !destLang) {
-                showError('Please enter both source and target languages.');
-                return;
-            }
-
-            try {
-                showLoading(true, 'Translating your summary...');
-                const originalSummary = document.getElementById(summaryId).querySelector('.summary-content').innerText;
-                const prompt = `Translate the following text from ${sourceLang} to ${destLang} in markdown format:\n\n${originalSummary}`;
-                
-                const requestBody = {
-                    contents: [{
-                        parts: [{ text: prompt }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 8192,
-                        responseMimeType: 'text/plain'
-                    }
-                };
-
-                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API request failed: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                const translation = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!translation) {
-                    throw new Error('No translation received from API');
-                }
-
-                const translationId = `translate-response-content-${summaryId}`;
-                responseDiv.innerHTML = `
-                    <div id="${translationId}">${marked.parse(translation)}</div>
-                    <button onclick="copyText('${translationId}')">Copy Translation</button>
-                    <button onclick="shareText('${translationId}')">Share Translation</button>
-                    <button onclick="deleteTranslation('${translationId}')">Delete Translation</button>
-                `;
-                showLoading(false);
-            } catch (error) {
-                showError(`Error processing translation: ${error.message}`);
-                showLoading(false);
-            }
-        }
-
-        function copyText(elementId) {
-            const text = document.getElementById(elementId).innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Text copied to clipboard!');
-            }).catch(err => {
-                showError('Failed to copy text: ' + err.message);
-            });
-        }
-
-        function downloadText(elementId) {
-            const text = document.getElementById(elementId).innerText;
-            const blob = new Blob([text], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'summary.txt';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function shareText(elementId) {
-            const text = document.getElementById(elementId).innerText;
-            if (navigator.share) {
-                navigator.share({
-                    title: 'AI Summary',
-                    text: text
-                }).catch(err => {
-                    showToast('Share canceled.');
-                });
-            } else {
-                showToast('Share API not supported in this browser.');
-            }
-        }
-
-        function deleteSummary(summaryId) {
-            const element = document.getElementById(summaryId);
-            if (element) {
-                element.remove();
-            }
-        }
-
-        function deleteAskResponse(responseId) {
-            const responseDiv = document.getElementById(responseId)?.parentElement;
-            if (responseDiv) {
-                responseDiv.innerHTML = '';
-            }
-        }
-
-        function deleteTranslation(translationId) {
-            const responseDiv = document.getElementById(translationId)?.parentElement;
-            if (responseDiv) {
-                responseDiv.innerHTML = '';
-            }
-        }
-
-        function toggleCollapsible(id) {
-            const content = document.getElementById(id);
-            if (content) {
-                content.classList.toggle('active');
-            }
-        }
-
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(new Error('Failed to read file'));
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function showLoading(show, message = '') {
-            loadingDiv.textContent = message;
-            loadingDiv.style.display = show ? 'block' : 'none';
-        }
-
-        function showError(message) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-
-        function clearError() {
-            errorDiv.textContent = '';
-            errorDiv.style.display = 'none';
-        }
-
-        function showToast(message) {
-            toastDiv.textContent = message;
-            toastDiv.style.display = 'block';
-            setTimeout(() => {
-                toastDiv.style.display = 'none';
-                toastDiv.textContent = '';
-            }, 5000);
-        }
     </script>
 </body>
 </html>
